@@ -1,7 +1,7 @@
 # %pools
 A minimal "pool" membership manager. A "pool" is a set of ships managed by a host.
 
-Many applications need to manage groups of people and need to be able to send, cancel, accept, and reject invitations and requests for entry to the group and to be able to kick members and allow members to leave.
+Many applications need to manage groups of people and need to be able to send, cancel, accept, and reject invitations and requests for entry to the group to be able to kick members and allow members to leave.
 
 An ecosystem of composable apps would benefit from a minimal and clear pals-sized agent specialized for this purpose.
 
