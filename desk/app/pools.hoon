@@ -484,7 +484,6 @@
     ==
   ==
 ::
-:: TODO: make state externally legible
 ++  on-peek
   |=  =(pole knot)
   ^-  (unit (unit cage))
