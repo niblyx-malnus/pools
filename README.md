@@ -7,4 +7,4 @@ Many applications need to manage groups of people and need to be able to send, c
 
 An ecosystem of composable apps would benefit from a minimal and clear %pals-sized agent specialized for this purpose.
 
-By delegating responsibility for role management (apart from host/member), metadata, visibility/discoverability and invite/request messages to the client app and restricting all actions on the pool to the host ship %pools becomes a very compact and general tool.
+By delegating responsibility for role management (apart from host/member), metadata, visibility/discoverability and invite/request messages to the client app and restricting all actions on the pool to the host ship, %pools becomes a very compact and general tool.
