@@ -7,7 +7,6 @@
 ++  grab
   |%
   ++  noun  request-gesture
-  :: ++  json  request-gesture:dejs
   --
 ++  grad  %noun
 --

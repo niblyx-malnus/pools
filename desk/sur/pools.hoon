@@ -1,5 +1,5 @@
 |%
-+$  id       [host=ship name=knot]
++$  id       [host=ship name=term]
 :: graylist - blacklist and whitelist
 :: automatic request handling
 :: | auto reject or & auto accept
@@ -33,6 +33,15 @@
       [%update fields=(list field)]
       [%delete ~]
   ==
+:: auto-generate unique id
+::
++$  vent-id         (pair @p @da)
+:: create an id based on a name
+::
++$  create-command  [name=@t fields=(list field)]
+:: vent request, not to be confused with membership request
+::
++$  create-request  (pair vent-id create-command)
 ::
 +$  invite-command
   %+  pair  id
@@ -68,13 +77,20 @@
       %reject         :: host to requester
   ==
 ::
-+$  update
++$  pool-update
   $%  field
       [%pool =pool]
       [%member p=(each ship ship)]
       [%invited p=(each [ship (pair time (unit ?))] ship)]
       [%requested p=(each [ship (pair time (unit ?))] ship)]
       [%receipt p=(each [ship (pair time ?)] ship)]
+  ==
+::
++$  home-update
+  $%  [%pool p=(each id id)] :: new pool watched or created
+      [%invite p=(each [id (pair time (unit ?))] id)]
+      [%request p=(each [id (pair time (unit ?))] id)]
+      [%receipt p=(each [id (pair time ?)] id)]
   ==
 ::
 +$  peek

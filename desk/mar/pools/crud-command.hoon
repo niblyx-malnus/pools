@@ -7,7 +7,6 @@
 ++  grab
   |%
   ++  noun  crud-command
-  :: ++  json  crud-command:dejs
   --
 ++  grad  %noun
 --

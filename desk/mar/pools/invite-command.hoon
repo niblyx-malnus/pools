@@ -7,7 +7,6 @@
 ++  grab
   |%
   ++  noun  invite-command
-  :: ++  json  invite-command:dejs
   --
 ++  grad  %noun
 --

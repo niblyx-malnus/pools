@@ -1,12 +1,12 @@
 /-  *pools
-|_  ges=invite-gesture
+|_  req=create-request
 ++  grow
   |%
-  ++  noun  ges
+  ++  noun  req
   --
 ++  grab
   |%
-  ++  noun  invite-gesture
+  ++  noun  create-request
   --
 ++  grad  %noun
 --

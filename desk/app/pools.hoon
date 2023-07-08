@@ -19,11 +19,16 @@
 /+  dbug, verb, default-agent
 :: Import during development to force compilation
 ::
-/=  ca  /mar/pools/crud-command
-/=  ia  /mar/pools/invite-command
-/=  ra  /mar/pools/request-command
-/=  pu  /mar/pools/update
+/=  cc  /mar/pools/crud-command
+/=  ic  /mar/pools/invite-command
+/=  rc  /mar/pools/request-command
+/=  ig  /mar/pools/invite-gesture
+/=  rg  /mar/pools/request-gesture
+/=  pu  /mar/pools/pool-update
+/=  ph  /mar/pools/home-update
 /=  pk  /mar/pools/peek
+/=  co  /mar/pools/create-command
+/=  cr  /mar/pools/create-request
 |%
 +$  state-0
   $:  %0
@@ -61,6 +66,30 @@
   |=  [=mark =vase]
   ^-  (quip card _this)
   ?+    mark  (on-poke:def mark vase)
+      %pools-create-command
+    :: only you can command your own agent
+    ::
+    ?>  =(src our):bowl
+    =/  req=create-request  [[our now]:bowl !<(create-command vase)]
+    =^  cards  this
+      (on-poke pools-create-request+!>(req))
+    [cards this]
+    ::
+      %pools-create-request
+    :: only you can command your own agent
+    ::
+    ?>  =(src our):bowl
+    =/  [vid=vent-id cmd=create-command]  !<(create-request vase)
+    =/  vent-path  /vent/(scot %p p.vid)/(scot %da q.vid)
+    =/  =id  (unique-id:hc name.cmd)
+    =^  cards  this
+      (on-poke pools-crud-command+!>([id %create fields.cmd]))
+    :_  this
+    %+  welp  cards
+    :~  [%give %fact ~[vent-path] pools-vent+!>(id)]
+        [%give %kick ~[vent-path] ~]
+    ==
+    ::
       %pools-crud-command
     :: only you can command your own agent
     ::
@@ -73,11 +102,13 @@
     ?>  =(our.bowl host.p.cmd)
     ?-    +<.cmd
         %create
+      ?>  ((sane %tas) name.p.cmd)
       ?<  (~(has by pools) p.cmd)
       =|  =pool
       =.  pool  (do-updates:hc pool fields.q.cmd)
       =.  members.pool  (~(put in members.pool) our.bowl)
-      `this(pools (~(put by pools) p.cmd pool))
+      :_  this(pools (~(put by pools) p.cmd pool))
+      [%give %fact ~[/home] pools-home-update+!>([%pool %& p.cmd])]~
       ::
         %update
       =/  =pool  (~(got by pools) p.cmd)
@@ -88,11 +119,13 @@
       =/  =path  /pool/(scot %p host.p.cmd)/[name.p.cmd]
       %+  turn  fields.q.cmd
       |=  =field
-      [%give %fact ~[path] pools-update+!>(field)]
+      [%give %fact ~[path] pools-pool-update+!>(field)]
       ::
         %delete
       :_  this(pools (~(del by pools) p.cmd))
-      [%give %kick ~[/pool/(scot %p host.p.cmd)/[name.p.cmd]] ~]~
+      :~  [%give %fact ~[/home] pools-home-update+!>([%pool %| p.cmd])]
+          [%give %kick ~[/pool/(scot %p host.p.cmd)/[name.p.cmd]] ~]
+      ==
     ==
     ::
       %pools-invite-command
@@ -122,8 +155,8 @@
         :: send %invited update
         ::
         =/  =path  /pool/(scot %p host.p.cmd)/[name.p.cmd]
-        =/  =update  [%invited %& ship.q.cmd [now.bowl ~]]
-        [%give %fact ~[path] pools-update+!>(update)]
+        =/  upd=pool-update  [%invited %& ship.q.cmd [now.bowl ~]]
+        [%give %fact ~[path] pools-pool-update+!>(upd)]
       ==
       ::
         %cancel
@@ -145,12 +178,12 @@
         ::
         :: send %invited update
         ::
-        =/  =update  [%invited %| ship.q.cmd]
-        [%give %fact ~[path] pools-update+!>(update)]
+        =/  upd=pool-update  [%invited %| ship.q.cmd]
+        [%give %fact ~[path] pools-pool-update+!>(upd)]
         :: send %receipt update
         ::
-        =/  =update  [%receipt %| ship.q.cmd]
-        [%give %fact ~[path] pools-update+!>(update)]
+        =/  upd=pool-update  [%receipt %| ship.q.cmd]
+        [%give %fact ~[path] pools-pool-update+!>(upd)]
       ==
       ::
         %kick
@@ -175,20 +208,20 @@
         [%give %kick ~[path] `ship.q.cmd]
         :: send %member update
         ::
-        =/  =update  [%member %| ship.q.cmd]
-        [%give %fact ~[path] pools-update+!>(update)]
+        =/  upd=pool-update  [%member %| ship.q.cmd]
+        [%give %fact ~[path] pools-pool-update+!>(upd)]
         :: send %invited update
         ::
-        =/  =update  [%invited %| ship.q.cmd]
-        [%give %fact ~[path] pools-update+!>(update)]
+        =/  upd=pool-update  [%invited %| ship.q.cmd]
+        [%give %fact ~[path] pools-pool-update+!>(upd)]
         :: send %requested update
         ::
-        =/  =update  [%requested %| ship.q.cmd]
-        [%give %fact ~[path] pools-update+!>(update)]
+        =/  upd=pool-update  [%requested %| ship.q.cmd]
+        [%give %fact ~[path] pools-pool-update+!>(upd)]
         :: send %receipt update
         ::
-        =/  =update  [%receipt %| ship.q.cmd]
-        [%give %fact ~[path] pools-update+!>(update)]
+        =/  upd=pool-update  [%receipt %| ship.q.cmd]
+        [%give %fact ~[path] pools-pool-update+!>(upd)]
       ==
       ::
         %accept
@@ -227,35 +260,59 @@
       :: add to requests
       ::
       :_  this(requests (~(put by requests) p.cmd [now.bowl ~]))
-      :: send request gesture and follow wire for ack
-      ::
-      =/  =cage  pools-request-gesture+!>([p.cmd %request])
-      =/  =wire  /request/[(scot %p host.p.cmd)]/[name.p.cmd]
-      [%pass wire %agent [host.p.cmd dap.bowl] %poke cage]~
+      :~
+        =/  upd=home-update  [%request %& p.cmd [now.bowl ~]]
+        [%give %fact ~[/home] pools-home-update+!>(upd)]
+        :: send request gesture and follow wire for ack
+        ::
+        =/  =cage  pools-request-gesture+!>([p.cmd %request])
+        =/  =wire  /request/[(scot %p host.p.cmd)]/[name.p.cmd]
+        [%pass wire %agent [host.p.cmd dap.bowl] %poke cage]
+      ==
       ::
         %cancel
       :: remove from requests and receipts
       ::
       =.  requests  (~(del by requests) p.cmd)
       :_  this(receipts (~(del by receipts) p.cmd))
-      :: send cancel gesture
-      ::
-      =/  =cage  pools-request-gesture+!>([p.cmd %cancel])
-      [%pass / %agent [host.p.cmd dap.bowl] %poke cage]~
+      :~
+        :: send home updates
+        ::
+        =/  upd=home-update  [%request %| p.cmd]
+        [%give %fact ~[/home] pools-home-update+!>(upd)]
+        =/  upd=home-update  [%receipt %| p.cmd]
+        [%give %fact ~[/home] pools-home-update+!>(upd)]
+        :: send cancel gesture
+        ::
+        =/  =cage  pools-request-gesture+!>([p.cmd %cancel])
+        [%pass / %agent [host.p.cmd dap.bowl] %poke cage]
+      ==
       ::
         %leave
       ?<  =(our.bowl host.p.cmd)
-      :: leave pool path
-      ::
-      =/  =wire  /pool/(scot %p host.p.cmd)/[name.p.cmd]
-      :-  [%pass wire %agent [host.p.cmd dap.bowl] %leave ~]~
       :: remove pool
       ::
-      %=  this
-        pools     (~(del by pools) p.cmd)
-        invites   (~(del by invites) p.cmd)
-        requests  (~(del by requests) p.cmd)
-        receipts  (~(del by receipts) p.cmd)
+      :_  %=  this
+            pools     (~(del by pools) p.cmd)
+            invites   (~(del by invites) p.cmd)
+            requests  (~(del by requests) p.cmd)
+            receipts  (~(del by receipts) p.cmd)
+          ==
+      :~
+        :: leave pool path
+        ::
+        =/  =wire  /pool/(scot %p host.p.cmd)/[name.p.cmd]
+        [%pass wire %agent [host.p.cmd dap.bowl] %leave ~]
+        :: send home updates
+        ::
+        =/  upd=home-update  [%pool %| p.cmd]
+        [%give %fact ~[/home] pools-home-update+!>(upd)]
+        =/  upd=home-update  [%invite %| p.cmd]
+        [%give %fact ~[/home] pools-home-update+!>(upd)]
+        =/  upd=home-update  [%request %| p.cmd]
+        [%give %fact ~[/home] pools-home-update+!>(upd)]
+        =/  upd=home-update  [%receipt %| p.cmd]
+        [%give %fact ~[/home] pools-home-update+!>(upd)]
       ==
       ::
         %accept
@@ -280,12 +337,12 @@
         [%pass / %agent [ship.q.cmd dap.bowl] %poke cage]
         :: send %requested update
         ::
-        =/  =update  [%requested %& ship.q.cmd [now.bowl `&]]
-        [%give %fact ~[path] pools-update+!>(update)]
+        =/  upd=pool-update  [%requested %& ship.q.cmd [now.bowl `&]]
+        [%give %fact ~[path] pools-pool-update+!>(upd)]
         :: send %member update
         ::
-        =/  =update  [%member %& ship.q.cmd]
-        [%give %fact ~[path] pools-update+!>(update)]
+        =/  upd=pool-update  [%member %& ship.q.cmd]
+        [%give %fact ~[path] pools-pool-update+!>(upd)]
       ==
       ::
         %reject
@@ -309,8 +366,8 @@
         :: send %requested update
         ::
         =/  =path  /pool/(scot %p host.p.cmd)/[name.p.cmd]
-        =/  =update  [%requested %& ship.q.cmd [now.bowl `|]]
-        [%give %fact ~[path] pools-update+!>(update)]
+        =/  upd=pool-update  [%requested %& ship.q.cmd [now.bowl `|]]
+        [%give %fact ~[path] pools-pool-update+!>(upd)]
       ==
     ==
     ::
@@ -323,7 +380,11 @@
       ?>  =(src.bowl host.p.ges)
       :: add to invites
       ::
-      `this(invites (~(put by invites) p.ges [now.bowl ~]))
+      :_  this(invites (~(put by invites) p.ges [now.bowl ~]))
+      :: send home update
+      ::
+      =/  upd=home-update  [%invite %& p.ges [now.bowl ~]]
+      [%give %fact ~[/home] pools-home-update+!>(upd)]~
       ::
         %cancel
       :: only the host can invite
@@ -331,7 +392,11 @@
       ?>  =(src.bowl host.p.ges)
       :: remove from invites
       ::
-      `this(invites (~(del by invites) p.ges))
+      :_  this(invites (~(del by invites) p.ges))
+      :: send home update
+      ::
+      =/  upd=home-update  [%invite %| p.ges]
+      [%give %fact ~[/home] pools-home-update+!>(upd)]~
       ::
         %accept
       :: update invited and add to members
@@ -346,8 +411,8 @@
       :: send %invited update
       ::
       =/  =path  /pool/(scot %p host.p.ges)/[name.p.ges]
-      =/  =update  [%invited %& invitee [now.bowl `&]]
-      [%give %fact ~[path] pools-update+!>(update)]~
+      =/  upd=pool-update  [%invited %& invitee [now.bowl `&]]
+      [%give %fact ~[path] pools-pool-update+!>(upd)]~
       ::
         %reject
       :: update invited
@@ -361,8 +426,8 @@
       :: send %invited update
       ::
       =/  =path  /pool/(scot %p host.p.ges)/[name.p.ges]
-      =/  =update  [%invited %& invitee [now.bowl `|]]
-      [%give %fact ~[path] pools-update+!>(update)]~
+      =/  upd=pool-update  [%invited %& invitee [now.bowl `|]]
+      [%give %fact ~[path] pools-pool-update+!>(upd)]~
     ==
     ::
       %pools-request-gesture
@@ -380,8 +445,8 @@
         :: send %requested update
         ::
         =/  =path  /pool/(scot %p host.p.ges)/[name.p.ges]
-        =/  =update  [%requested %& requester [now.bowl ~]]
-        [%give %fact ~[path] pools-update+!>(update)]~
+        =/  upd=pool-update  [%requested %& requester [now.bowl ~]]
+        [%give %fact ~[path] pools-pool-update+!>(upd)]~
       :: auto-accept or auto-deny
       :: 
       ?+    (get-auto:hc requester graylist.pool)  ~
@@ -403,8 +468,8 @@
       :: send %requested update
       ::
       =/  =path  /pool/(scot %p host.p.ges)/[name.p.ges]
-      =/  =update  [%requested %| requester]
-      [%give %fact ~[path] pools-update+!>(update)]~
+      =/  upd=pool-update  [%requested %| requester]
+      [%give %fact ~[path] pools-pool-update+!>(upd)]~
       ::
         %accept
       :: only the host can accept/reject requests
@@ -414,10 +479,16 @@
       ::
       ?>  (~(has by requests) p.ges)
       :_  this(requests (~(put by requests) p.ges [now.bowl `&]))
-      :: watch pool path
-      ::
-      =/  =wire  /pool/(scot %p host.p.ges)/[name.p.ges]
-      [%pass wire %agent [src dap]:bowl %watch wire]~
+      :~
+        :: send home update
+        ::
+        =/  upd=home-update  [%request %& p.ges [now.bowl `&]]
+        [%give %fact ~[/home] pools-home-update+!>(upd)]
+        :: watch pool path
+        ::
+        =/  =wire  /pool/(scot %p host.p.ges)/[name.p.ges]
+        [%pass wire %agent [src dap]:bowl %watch wire]
+      ==
       ::
         %reject
       :: only the host can accept/reject requests
@@ -426,7 +497,11 @@
       :: update requests
       ::
       ?>  (~(has by requests) p.ges)
-      `this(requests (~(put by requests) p.ges [now.bowl `|]))
+      :_  this(requests (~(put by requests) p.ges [now.bowl `|]))
+      :: send home update
+      ::
+      =/  upd=home-update  [%request %& p.ges [now.bowl `|]]
+      [%give %fact ~[/home] pools-home-update+!>(upd)]~
     ==
   ==
 ::
@@ -434,6 +509,11 @@
   |=  =(pole knot)
   ^-  (quip card _this)
   ?+    pole  (on-watch:def pole)
+    [%vent @ @ ~]  `this
+    [%home ~]      `this
+    :: sends updates on sent requests, request receipts,
+    :: received invites and 
+    ::
       [%pool h=@ n=@ ~]
     =/  host=ship  (slav %p h.pole)
     ?>  =(host our.bowl)
@@ -446,7 +526,7 @@
     ?>  (~(has in members.pool) src.bowl)
     :: give initial update
     ::
-    :_(this [%give %fact ~[pole] pools-update+!>([%pool pool])]~)
+    :_(this [%give %fact ~[pole] pools-pool-update+!>([%pool pool])]~)
   ==
 ::
 ++  on-leave
@@ -467,20 +547,20 @@
     :~
       :: send %member update
       ::
-      =/  =update  [%member %| src.bowl]
-      [%give %fact ~[pole] pools-update+!>(update)]
+      =/  upd=pool-update  [%member %| src.bowl]
+      [%give %fact ~[pole] pools-pool-update+!>(upd)]
       :: send %invited update
       ::
-      =/  =update  [%invited %| src.bowl]
-      [%give %fact ~[pole] pools-update+!>(update)]
+      =/  upd=pool-update  [%invited %| src.bowl]
+      [%give %fact ~[pole] pools-pool-update+!>(upd)]
       :: send %requested update
       ::
-      =/  =update  [%requested %| src.bowl]
-      [%give %fact ~[pole] pools-update+!>(update)]
+      =/  upd=pool-update  [%requested %| src.bowl]
+      [%give %fact ~[pole] pools-pool-update+!>(upd)]
       :: send %receipt update
       ::
-      =/  =update  [%receipt %| src.bowl]
-      [%give %fact ~[pole] pools-update+!>(update)]
+      =/  upd=pool-update  [%receipt %| src.bowl]
+      [%give %fact ~[pole] pools-pool-update+!>(upd)]
     ==
   ==
 ::
@@ -509,17 +589,29 @@
     =/  =id        [host n.pole]
     ?+    -.sign  (on-agent:def pole sign)
         %watch-ack
-      ?~  p.sign  `this
+      ?~  p.sign
+        :_(this [%give %fact ~[/home] pools-home-update+!>([%pool %& id])]~)
       %-  (slog 'Subscribe failure.' ~)
       %-  (slog u.p.sign)
       :: clear pool from state on watch nack
       ::
-      :-  ~
-      %=  this
-        pools     (~(del by pools) id)
-        invites   (~(del by invites) id)
-        requests  (~(del by requests) id)
-        receipts  (~(del by receipts) id)
+      :_  %=  this
+            pools     (~(del by pools) id)
+            invites   (~(del by invites) id)
+            requests  (~(del by requests) id)
+            receipts  (~(del by receipts) id)
+          ==
+      :~
+        :: send home updates
+        ::
+        =/  upd=home-update  [%pool %| id]
+        [%give %fact ~[/home] pools-home-update+!>(upd)]
+        =/  upd=home-update  [%invite %| id]
+        [%give %fact ~[/home] pools-home-update+!>(upd)]
+        =/  upd=home-update  [%request %| id]
+        [%give %fact ~[/home] pools-home-update+!>(upd)]
+        =/  upd=home-update  [%receipt %| id]
+        [%give %fact ~[/home] pools-home-update+!>(upd)]
       ==
       ::
         %kick
@@ -529,10 +621,10 @@
       :_(this [%pass pole %agent [src dap]:bowl %watch pole]~)
       ::
         %fact
-      ?.  =(p.cage.sign %pools-update)  (on-agent:def pole sign)
+      ?.  =(p.cage.sign %pools-pool-update)  (on-agent:def pole sign)
       :: incorporate pool update
       ::
-      =/  upd=update  !<(update q.cage.sign)
+      =/  upd=pool-update  !<(pool-update q.cage.sign)
       =/  =pool  (~(gut by pools) id *pool)
       =.  pool   (do-update:hc upd pool)
       `this(pools (~(put by pools) id pool))
@@ -544,13 +636,16 @@
     ?>  =(host our.bowl)
     =/  =id        [host n.pole]
     =/  =pool      (~(got by pools) id)
+    =/  =path      [%pool +.pole]
     ?.  (~(has by invited.pool) src.bowl)  ~|(%invitee-not-invited !!)
     :: register invite poke-ack
     ::
-    =.  receipts.pool
-      (~(put by receipts.pool) src.bowl now.bowl ?=(~ p.sign))
+    :: TODO: send receipts update
+    =/  receipt  [src.bowl now.bowl ?=(~ p.sign)]
+    =.  receipts.pool  (~(put by receipts.pool) receipt)
     ~?  ?=(^ p.sign)  invite-failure+[id+id ship+src.bowl] :: print nack
-    `this(pools (~(put by pools) id pool))
+    :_  this(pools (~(put by pools) id pool))
+    [%give %fact ~[path] pools-pool-update+!>([%receipt %& receipt])]~
     ::
       [%request h=@ n=@ ~]
     ?.  ?=(%poke-ack -.sign)  ~|([%unexpected-agent-sign pole -.sign] !!)
@@ -560,7 +655,11 @@
     :: register request poke-ack
     ::
     ~?  ?=(^ p.sign)  request-failure+id :: print nack
-    `this(receipts (~(put by receipts) id now.bowl ?=(~ p.sign)))
+    :_  this(receipts (~(put by receipts) id now.bowl ?=(~ p.sign)))
+    :: send home update
+    ::
+    =/  upd=home-update  [%receipt %& id [now.bowl ?=(~ p.sign)]]
+    [%give %fact ~[/home] pools-home-update+!>(upd)]~
     ::
       [%accept-invite h=@ n=@ ~]
     ?.  ?=(%poke-ack -.sign)  ~|([%unexpected-agent-sign pole -.sign] !!)
@@ -572,10 +671,16 @@
     :: update invites
     ::
     :_  this(invites (~(put by invites) id [now.bowl `&]))
-    :: watch pool path
-    ::
-    =/  wire  [%pool +.pole]
-    [%pass wire %agent [src dap]:bowl %watch wire]~
+    :~
+      :: send home update
+      ::
+      =/  upd=home-update  [%invite %& id [now.bowl `&]]
+      [%give %fact ~[/home] pools-home-update+!>(upd)]
+      :: watch pool path
+      ::
+      =/  wire  [%pool +.pole]
+      [%pass wire %agent [src dap]:bowl %watch wire]
+    ==
     ::
       [%reject-invite h=@ n=@ ~]
     ?.  ?=(%poke-ack -.sign)  ~|([%unexpected-agent-sign pole -.sign] !!)
@@ -586,7 +691,11 @@
     ?^  p.sign  (on-agent:def pole sign)
     :: update invites
     ::
-    `this(invites (~(put by invites) id [now.bowl `|]))
+    :_  this(invites (~(put by invites) id [now.bowl `|]))
+    :: send home update
+    ::
+    =/  upd=home-update  [%invite %& id [now.bowl `|]]
+    [%give %fact ~[/home] pools-home-update+!>(upd)]~
   ==
 ::
 ++  on-arvo   on-arvo:def
@@ -606,6 +715,37 @@
   ?^  auto=(~(get by rank) (clan:title requester))  auto
   rest
 ::
+++  unique-id
+  |=  name=@t
+  |^  `id`(uniquify (tasify name))
+  ++  uniquify
+    |=  =term
+    ^-  id
+    ?.  (~(has by pools) [our.bowl term])
+      [our.bowl term]
+    =/  num=@t  (numb (end 4 eny.bowl))
+    $(term (rap 3 term '-' num ~)) :: add random number to end
+  ++  numb :: from numb:enjs:format
+    |=  a=@u
+    ?:  =(0 a)  '0'
+    %-  crip
+    %-  flop
+    |-  ^-  ^tape
+    ?:(=(0 a) ~ [(add '0' (mod a 10)) $(a (div a 10))])
+  ++  tasify
+    |=  name=@t
+    ^-  term
+    =/  =tape
+      %+  turn  (cass (trip name))
+      |=(=@t `@t`?~(c=(rush t ;~(pose nud low)) '-' u.c))
+    =/  =term
+      ?~  tape  %$
+      ?^  f=(rush i.tape low)
+        (crip tape)
+      (crip ['x' '-' tape])
+    ?>(((sane %tas) term) term)
+  --
+::
 ++  do-updates
   |=  [=pool fields=(list field)]
   ^+  pool
@@ -616,7 +756,7 @@
   ==
 ::
 ++  do-update
-  |=  [upd=update =pool]
+  |=  [upd=pool-update =pool]
   ?-    -.upd
     %graylist  pool(graylist graylist.upd)
     %dudes     pool(dudes dudes.upd)

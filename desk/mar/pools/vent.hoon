@@ -1,12 +1,12 @@
 /-  *pools
-|_  ges=invite-gesture
+|_  vent=id
 ++  grow
   |%
-  ++  noun  ges
+  ++  noun  vent
   --
 ++  grab
   |%
-  ++  noun  invite-gesture
+  ++  noun  id
   --
 ++  grad  %noun
 --
