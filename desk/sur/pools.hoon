@@ -23,8 +23,10 @@
 :: each field update is a total field replacement
 ::
 +$  field
-  $%  [%graylist =graylist]
-      [%dudes dudes=(set dude:gall)]
+  $%  [%ship p=(each [ship ?] ship)]
+      [%rank p=(each [rank:title ?] rank:title)]
+      [%rest p=(unit ?)]
+      [%dude p=(each dude:gall dude:gall)]
   ==
 ::
 +$  crud-command

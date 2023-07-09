@@ -757,9 +757,26 @@
 ++  do-update
   |=  [upd=pool-update =pool]
   ?-    -.upd
-    %graylist  pool(graylist graylist.upd)
-    %dudes     pool(dudes dudes.upd)
     %pool      pool.upd
+    %rest      pool(rest.graylist p.upd)
+      %ship
+    ?-  -.p.upd
+      %&  pool(ship.graylist (~(put in ship.graylist.pool) p.p.upd))
+      %|  pool(ship.graylist (~(del in ship.graylist.pool) p.p.upd))
+    ==
+    ::
+      %rank
+    ?-  -.p.upd
+      %&  pool(rank.graylist (~(put in rank.graylist.pool) p.p.upd))
+      %|  pool(rank.graylist (~(del in rank.graylist.pool) p.p.upd))
+    ==
+    ::
+      %dude
+    ?-  -.p.upd
+      %&  pool(dudes (~(put in dudes.pool) p.p.upd))
+      %|  pool(dudes (~(del in dudes.pool) p.p.upd))
+    ==
+    ::
       %member
     ?-  -.p.upd
       %&  pool(members (~(put in members.pool) p.p.upd))
