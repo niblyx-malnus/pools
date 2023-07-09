@@ -761,14 +761,14 @@
     %rest      pool(rest.graylist p.upd)
       %ship
     ?-  -.p.upd
-      %&  pool(ship.graylist (~(put in ship.graylist.pool) p.p.upd))
-      %|  pool(ship.graylist (~(del in ship.graylist.pool) p.p.upd))
+      %&  pool(ship.graylist (~(put by ship.graylist.pool) p.p.upd))
+      %|  pool(ship.graylist (~(del by ship.graylist.pool) p.p.upd))
     ==
     ::
       %rank
     ?-  -.p.upd
-      %&  pool(rank.graylist (~(put in rank.graylist.pool) p.p.upd))
-      %|  pool(rank.graylist (~(del in rank.graylist.pool) p.p.upd))
+      %&  pool(rank.graylist (~(put by rank.graylist.pool) p.p.upd))
+      %|  pool(rank.graylist (~(del by rank.graylist.pool) p.p.upd))
     ==
     ::
       %dude
