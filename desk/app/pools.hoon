@@ -572,10 +572,18 @@
     [%x %invites ~]   ``pools-peek+!>(invites+invites)
     [%x %requests ~]  ``pools-peek+!>(requests+requests)
     [%x %receipts ~]  ``pools-peek+!>(receipts+receipts)
+    ::
       [%x %pool h=@ n=@ ~]
     =/  host=ship  (slav %p h.pole)
     =/  =id        [host n.pole]
     ``pools-peek+!>(pool+(~(got by pools) id))
+    ::
+      [%x %has-pool h=@ n=@ ~]
+    =/  host=ship  (slav %p h.pole)
+    =/  =id        [host n.pole]
+    ``loob+!>((~(has by pools) id))
+
+
   ==
 ::
 ++  on-agent
