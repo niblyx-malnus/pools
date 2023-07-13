@@ -582,8 +582,6 @@
     =/  host=ship  (slav %p h.pole)
     =/  =id        [host n.pole]
     ``loob+!>((~(has by pools) id))
-
-
   ==
 ::
 ++  on-agent
@@ -766,6 +764,7 @@
   |=  [upd=pool-update =pool]
   ?-    -.upd
     %pool      pool.upd
+    %graylist  pool(graylist graylist.upd)
     %rest      pool(rest.graylist p.upd)
       %ship
     ?-  -.p.upd

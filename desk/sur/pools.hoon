@@ -27,6 +27,7 @@
       [%rank p=(each [rank:title ?] rank:title)]
       [%rest p=(unit ?)]
       [%dude p=(each dude:gall dude:gall)]
+      [%graylist =graylist]
   ==
 ::
 +$  crud-command
